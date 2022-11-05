@@ -1,6 +1,7 @@
 import redis from "redis";
 import axios from "axios";
 import "dotenv";
+import { getAllModules } from "./repository.js";
 
 let redisClient;
 
@@ -14,6 +15,28 @@ let redisClient;
 
 export async function getModules(req, res) {
 
+    const { ay } = req.params;
+    
+    let modules;
+    try {
+        const fromRedis = await redisClient.get(ay);
+        if (fromRedis) {
+            console.log("cache");
+            modules = JSON.parse(fromRedis);
+        } else {
+            console.log("no cache");
+            modules = await getAllModules(ay);
+            await redisClient.set(ay, JSON.stringify(modules));
+        }
+
+        res.send({ modules });
+    } catch (error) {
+        console.log(error);
+        res.status(400).json({ message : error });
+    }
+}
+
+export async function getModulesByAy(req, res) {
     const { ay } = req.params;
     
     let result;
@@ -36,5 +59,4 @@ export async function getModules(req, res) {
         console.log(error);
         res.status(400).json({ message : error });
     }
-
 }
